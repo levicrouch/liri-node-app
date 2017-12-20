@@ -1,0 +1,27 @@
+{
+  "name": "liri-node-app",
+  "version": "1.0.0",
+  "description": "liri app",
+  "main": "liri.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/levicrouch/liri-node-app.git"
+  },
+  "keywords": [
+    "liri"
+  ],
+  "author": "Levi Crouch",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/levicrouch/liri-node-app/issues"
+  },
+  "homepage": "https://github.com/levicrouch/liri-node-app#readme",
+  "dependencies": {
+    "node-spotify-api": "^1.0.7",
+    "request": "^2.83.0",
+    "twitter": "^1.7.1"
+  }
+}
