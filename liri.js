@@ -1,8 +1,21 @@
 var keys = require("./keys.js");
 var request = require("request");
+var Twitter = require('twitter');
+var Spotify = require('node-spotify-api');
 // console.log("keys.sKeys", keys.sKeys);
 // console.log("keys.tKeys", keys.tKeys);
+var twitter = {
+    api: {
+        user_id: "943245553890033664",
+        tweetCount: 20,
+        baseUrl: "https://api.twitter.com/1.1/statuses/user_timeline.json",
 
+    }
+}
+var spotify = new Spotify({
+    id: keys.sKeys.client_id,
+    secret: keys.sKeys.client_secret
+});
 var liri = {
     command: {
         twitter: "my-tweets",
@@ -12,29 +25,33 @@ var liri = {
     },
     method: {
         getNodeArg: function () {
-            // var tempArg = "";
-            // for (var i = 2; i < process.argv.length; i++) {
-            //     if (i > 2 && i < process.argv.length) {
-            //         tempArg = tempArg + "+" + process.argv[i];
-            //     } else { tempArg += process.argv[i]; }
-            // }
             return process.argv[2];
         },
         getQueryArg: function () {
             var tempArg = "";
+            if (process.argv.length >= 4){
             for (var i = 3; i < process.argv.length; i++) {
                 if (i > 3 && i < process.argv.length) {
                     tempArg = tempArg + "+" + process.argv[i];
                 } else { tempArg += process.argv[i]; }
             }
             return tempArg;
+        }else if (process.argv.length <= 3){
+            throw "Error: Missing a query";
+            console.log("\nBe sure to enter a search term next time, mkay!?");
+        }
         }
     },
     action: {
         twitter: {
             requirement: "show last 20 tweets"
         },
-        spotify: "based on the song name, return the artist(s), song name, preview link, the album. If the song was not found, default to Ace of base I saw the sign",
+        spotify: {
+            requirement: "based on the song name, return the artist(s), song name, preview link, the album. If the song was not found, default to Ace of base I saw the sign",
+            query: "I Want it That Way",
+            baseUrl: "https://api.spotify.com/v1/search/q=name:",
+            queryUrl: function () {return this.baseUrl + liri.action.spotify.query + "&type=track"},
+        },
         omdb: {
             requirement: "Output title of movie, year the movie came out, IMDB and rotten tomatoes rating, country where it was produced, language of the movie, plot, actors in the movie. If no movie is entered, default to Mr. Nobody",
             movie: "Mr. Nobody",
@@ -93,11 +110,26 @@ switch (liri.method.getNodeArg()) {
         break;
     case liri.command.spotify:
         console.log("We are in the spotify case");
+        try {
+            liri.action.spotify.query = liri.method.getQueryArg();
+        }catch (error){
+            console.log(error);
+            break;
+        }
+        console.log("QueryUrl:", liri.action.spotify.queryUrl());
+        spotify
+            .search({type:'track', query:liri.action.spotify.query,limit:2})
+            .then(function (data) {
+                console.log(JSON.stringify(data, null, 3));
+            })
+            .catch(function (err) {
+                console.error('Error occurred: ' + err);
+            });
         break;
     case liri.command.omdb:
         console.log("We are in the omdb case");
         liri.action.omdb.movie = liri.method.getQueryArg();
-        // console.log("movie:" + liri.action.omdb.movie);
+        // console.log(liri.action.omdb.queryUrl());
         console.log("QueryUrl:", liri.action.omdb.queryUrl());
         request(liri.action.omdb.queryUrl(), function (error, response, body) {
             // If the request is successful
@@ -117,13 +149,13 @@ switch (liri.method.getNodeArg()) {
                     console.log(liri.action.omdb.output.year.text, liri.action.omdb.output.year.data);
                 }
                 try {
-                    liri.action.omdb.output.ratings[0].value.data = Ratings[0].Value;
+                    liri.action.omdb.output.ratings[0].value.data = returnObj.Ratings[0].Value;
                     console.log(liri.action.omdb.output.ratings[0].value.text, liri.action.omdb.output.ratings[0].value.data);
                 } catch (error) {
                     console.log(liri.action.omdb.output.ratings[0].value.text, liri.action.omdb.output.ratings[0].value.data);
                 }
                 try {
-                    liri.action.omdb.output.ratings[1].value.data = Ratings[1].Value;
+                    liri.action.omdb.output.ratings[1].value.data = returnObj.Ratings[1].Value;
                     console.log(liri.action.omdb.output.ratings[1].value.text, liri.action.omdb.output.ratings[1].value.data);
                 } catch (error) {
                     console.log(liri.action.omdb.output.ratings[1].value.text, liri.action.omdb.output.ratings[1].value.data);
