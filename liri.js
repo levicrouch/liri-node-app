@@ -4,14 +4,12 @@ var Twitter = require('twitter');
 var Spotify = require('node-spotify-api');
 // console.log("keys.sKeys", keys.sKeys);
 // console.log("keys.tKeys", keys.tKeys);
-var twitter = {
-    api: {
-        user_id: "943245553890033664",
-        tweetCount: 20,
-        baseUrl: "https://api.twitter.com/1.1/statuses/user_timeline.json",
-
-    }
-}
+var client = new Twitter({
+    consumer_key: keys.tKeys.consumer_key,
+    consumer_secret: keys.tKeys.consumer_secret,
+    access_token_key: keys.tKeys.access_token_key,
+    access_token_secret: keys.tKeys.access_token_secret
+});
 var spotify = new Spotify({
     id: keys.sKeys.client_id,
     secret: keys.sKeys.client_secret
@@ -29,28 +27,62 @@ var liri = {
         },
         getQueryArg: function () {
             var tempArg = "";
-            if (process.argv.length >= 4){
-            for (var i = 3; i < process.argv.length; i++) {
-                if (i > 3 && i < process.argv.length) {
-                    tempArg = tempArg + "+" + process.argv[i];
-                } else { tempArg += process.argv[i]; }
+            if (process.argv.length >= 4) {
+                for (var i = 3; i < process.argv.length; i++) {
+                    if (i > 3 && i < process.argv.length) {
+                        tempArg = tempArg + "+" + process.argv[i];
+                    } else { tempArg += process.argv[i]; }
+                }
+                return tempArg;
+            } else if (process.argv.length <= 3) {
+                throw "Error: Missing a query";
+                console.log("\nBe sure to enter a search term next time, mkay!?");
             }
-            return tempArg;
-        }else if (process.argv.length <= 3){
-            throw "Error: Missing a query";
-            console.log("\nBe sure to enter a search term next time, mkay!?");
-        }
         }
     },
     action: {
         twitter: {
-            requirement: "show last 20 tweets"
+            requirement: "show last 20 tweets",
+            getTweets: function () {
+
+                for (i = 0; i < 3; i++) {
+                    arrTweets = liri.action.twitter.output.tweets.push(tweets[i].text);
+                }
+                return arrTweets;
+            },
+            writeConsole: function () {
+                console.log(" ‛¯¯٭٭¯¯(▫▫)¯¯٭٭¯¯’")
+                console.log("Tweets from: " + this.output.user)
+                for (i = 0; i < liri.action.twitter.output.tweets.length; i++) {
+                    console.log("Tweet " + i + ": " + liri.action.twitter.output.tweets[i]);
+                }
+                console.log(" ‛¯¯٭٭¯¯(▫▫)¯¯٭٭¯¯’")
+            },
+            output: {
+                tweets: [],
+                user: ""
+            }
         },
         spotify: {
             requirement: "based on the song name, return the artist(s), song name, preview link, the album. If the song was not found, default to Ace of base I saw the sign",
             query: "I Want it That Way",
             baseUrl: "https://api.spotify.com/v1/search/q=name:",
-            queryUrl: function () {return this.baseUrl + liri.action.spotify.query + "&type=track"},
+            queryUrl: function () { return this.baseUrl + liri.action.spotify.query + "&type=track" },
+            writeConsole: function () {
+                console.log("♫♪.ılılıll|̲̅̅●̲̅̅|̲̅̅=̲̅̅|̲̅̅●̲̅̅|llılılı.♫♪")
+                for (key in this.output) {
+                    console.log(key + ": " + this.output[key]);
+                }
+                console.log("♫♪.ılılıll|̲̅̅●̲̅̅|̲̅̅=̲̅̅|̲̅̅●̲̅̅|llılılı.♫♪")
+            },
+            output: {
+                artistName: "",
+                songName: "",
+                albumName: "",
+                trackUrl: "",
+                artistUrl: "",
+                previewUrl: ""
+            }
         },
         omdb: {
             requirement: "Output title of movie, year the movie came out, IMDB and rotten tomatoes rating, country where it was produced, language of the movie, plot, actors in the movie. If no movie is entered, default to Mr. Nobody",
@@ -107,20 +139,41 @@ var liri = {
 switch (liri.method.getNodeArg()) {
     case liri.command.twitter:
         console.log("We are in the twitter case");
+        var params = { screen_name: 'M_Hedberg' };
+        client.get('statuses/user_timeline', params, function (error, tweets, response) {
+            if (!error) {
+                // console.log(tweets);
+                liri.action.twitter.output.user = tweets[0].user.name;
+                for (i = 0; i < 20; i++) {
+                    liri.action.twitter.output.tweets.push(tweets[i].text);
+                }
+                liri.action.twitter.writeConsole();
+            }
+        });
         break;
     case liri.command.spotify:
         console.log("We are in the spotify case");
         try {
             liri.action.spotify.query = liri.method.getQueryArg();
-        }catch (error){
+        } catch (error) {
             console.log(error);
             break;
         }
-        console.log("QueryUrl:", liri.action.spotify.queryUrl());
         spotify
-            .search({type:'track', query:liri.action.spotify.query,limit:2})
+            .search({ type: 'track', query: liri.action.spotify.query, limit: 2 })
             .then(function (data) {
-                console.log(JSON.stringify(data, null, 3));
+                // console.log(JSON.stringify(data, null, 3));
+                liri.action.spotify.output.artistName = data.tracks.items[0].artists[0].name;
+                liri.action.spotify.output.albumName = data.tracks.items[0].album.name;
+                liri.action.spotify.output.artistUrl = data.tracks.items[0].artists[0].external_urls.spotify;
+                liri.action.spotify.output.trackUrl = data.tracks.items[0].external_urls.spotify;
+                liri.action.spotify.output.songName = data.tracks.items[0].name;
+                liri.action.spotify.output.previewUrl = data.tracks.items[0].preview_url;
+                if (liri.action.spotify.output.artistName == "" || liri.action.spotify.output.songName == "") {
+                    liri.action.spotify.output.songName = "The Sign";
+                    liri.action.spotify.output.artistName = "Ace of Base";
+                }
+                liri.action.spotify.writeConsole();
             })
             .catch(function (err) {
                 console.error('Error occurred: ' + err);
