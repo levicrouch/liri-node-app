@@ -4,6 +4,7 @@ var keys = require("./keys.js");
 var request = require("request");
 var Twitter = require('twitter');
 var Spotify = require('node-spotify-api');
+
 // set a variable for invoking the Twitter constructor
 var client = new Twitter({
     consumer_key: keys.tKeys.consumer_key,
@@ -79,6 +80,7 @@ var liri = {
             queryUrl: function () { return this.baseUrl + liri.action.spotify.query + "&type=track" },
             writeConsole: function () {
                 // write to the console with a boombox ascii art
+                console.log("This song selection was chosen at random");
                 console.log("♫♪.ılılıll|̲̅̅●̲̅̅|̲̅̅=̲̅̅|̲̅̅●̲̅̅|llılılı.♫♪")
                 for (key in this.output) {
                     console.log(key + ": " + this.output[key]);
